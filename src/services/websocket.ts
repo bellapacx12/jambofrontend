@@ -1,5 +1,3 @@
-import type { BallDropData, MatchResolvedData } from "@/types/index";
-
 export type WSEventType =
   | "room:join"
   | "room:ticker"
