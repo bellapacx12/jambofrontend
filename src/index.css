@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    @apply h-full w-full bg-bingo-dark text-white;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .text-gold-gradient {
+    @apply bg-gradient-to-r from-bingo-gold to-bingo-gold-light bg-clip-text text-transparent;
+  }
+  .btn-emerald-gradient {
+    @apply bg-gradient-to-r from-bingo-emerald to-bingo-emerald-dark;
+  }
+  .btn-neon-gradient {
+    @apply bg-gradient-to-r from-bingo-neon-blue to-bingo-neon-purple;
+  }
+}
