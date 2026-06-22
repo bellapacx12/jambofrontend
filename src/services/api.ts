@@ -79,17 +79,21 @@ class ApiClient {
 
   // Game
   async getActiveGame(tier = 10) {
-    return this.request<{ game: unknown }>(`/p/games/active?tier=${tier}`);
+    return this.request<{ game: unknown }>(
+      `/api/v1/p/games/active?tier=${tier}`,
+    );
   }
 
   async getGameHistory(userId: number) {
     return this.request<{ history: GameHistoryItem[] }>(
-      `/p/games/${userId}/history`,
+      `/api/v1/p/games/${userId}/history`,
     );
   }
 
   async getPlayerStats(userId: number) {
-    return this.request<{ stats: PlayerStats }>(`/p/games/${userId}/stats`);
+    return this.request<{ stats: PlayerStats }>(
+      `/api/v1/p/games/${userId}/stats`,
+    );
   }
 }
 
