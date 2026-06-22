@@ -46,7 +46,7 @@ class ApiClient {
   // Auth
   async verifyInitData(initData: string) {
     const res = await this.request<{ token: string; user: User }>(
-      "/auth/verify",
+      "/api/v1/auth/verify",
       {
         method: "POST",
         headers: { "X-Telegram-Init-Data": initData },
