@@ -1,8 +1,15 @@
+import type { BallDropData, MatchResolvedData } from "@/types/index";
+
 export type WSEventType =
   | "room:join"
   | "room:ticker"
+  | "room:selected_cards"
+  | "room:timer_restart"
   | "card:select"
   | "card:confirmed"
+  | "card:selected"
+  | "game:started"
+  | "game:start_failed"
   | "match:ball_drop"
   | "match:resolved"
   | "error";
@@ -48,7 +55,7 @@ export class WebSocketService {
           const data = JSON.parse(event.data) as WSEvent;
           this.messageHandlers.forEach((handler) => handler(data));
         } catch {
-          console.error("Failed to parse WebSocket message");
+          console.error("Failed to parse WebSocket message:", event.data);
         }
       };
 
@@ -86,17 +93,24 @@ export class WebSocketService {
       this.ws.close();
       this.ws = null;
     }
+    this.messageHandlers = [];
   }
 
   send(event: WSEvent) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(event));
     } else {
-      console.warn("WebSocket not connected");
+      console.warn("WebSocket not connected, queueing not implemented");
     }
   }
 
-  joinRoom(tier: number, token: string) {
+  // Send JWT token from localStorage, NOT initData
+  joinRoom(tier: number) {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      console.error("Cannot join room: no auth token");
+      return;
+    }
     this.send({ event: "room:join", tier, token });
   }
 

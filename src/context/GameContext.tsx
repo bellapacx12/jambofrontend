@@ -1,6 +1,26 @@
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
-import type { ViewTab, GameView, BallDropData, MatchResolvedData, Cartela } from '@/types';
-import { wsService } from '@/services/websocket';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from "react";
+import type {
+  ViewTab,
+  GameView,
+  BallDropData,
+  MatchResolvedData,
+  Cartela,
+} from "@/types";
+import { wsService } from "@/services/websocket";
+
+interface SelectedCardInfo {
+  user_id: number;
+  username: string;
+  cartela_number: number;
+  matrix: number[][];
+}
 
 interface GameState {
   currentTab: ViewTab;
@@ -10,7 +30,9 @@ interface GameState {
   currentCartela: Cartela | null;
   gameId: string | null;
   timeRemaining: number;
-  playersRegistered: number;
+  playersJoined: number;
+  playersReady: number;
+  minRequired: number;
   prizePool: number;
   calledBalls: string[];
   latestBall: string | null;
@@ -19,6 +41,8 @@ interface GameState {
   isSpectator: boolean;
   winner: MatchResolvedData | null;
   showWinOverlay: boolean;
+  selectedCards: SelectedCardInfo[];
+  waitingForPlayers: boolean;
 }
 
 interface GameContextType extends GameState {
@@ -34,14 +58,16 @@ interface GameContextType extends GameState {
 }
 
 const initialState: GameState = {
-  currentTab: 'game',
-  gameView: 'lobby',
+  currentTab: "game",
+  gameView: "lobby",
   selectedTier: 10,
   selectedCartela: null,
   currentCartela: null,
   gameId: null,
   timeRemaining: 30,
-  playersRegistered: 0,
+  playersJoined: 0,
+  playersReady: 0,
+  minRequired: 5,
   prizePool: 0,
   calledBalls: [],
   latestBall: null,
@@ -50,6 +76,8 @@ const initialState: GameState = {
   isSpectator: false,
   winner: null,
   showWinOverlay: false,
+  selectedCards: [],
+  waitingForPlayers: false,
 };
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -67,7 +95,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const selectTier = useCallback((tier: number) => {
-    setState((prev) => ({ ...prev, selectedTier: tier, gameView: 'picker' }));
+    setState((prev) => ({ ...prev, selectedTier: tier, gameView: "picker" }));
   }, []);
 
   const selectCartela = useCallback((num: number) => {
@@ -78,39 +106,109 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const joinGameRoom = useCallback(() => {
     wsService.connect();
 
-    // Wait for connection then join
     const checkAndJoin = setInterval(() => {
       if (wsService.isConnected) {
         clearInterval(checkAndJoin);
-        const initData = window.Telegram?.WebApp?.initData || '';
-        wsService.joinRoom(state.selectedTier, initData);
+        wsService.joinRoom(state.selectedTier);
       }
     }, 100);
 
-    // Set up message handler
     const cleanup = wsService.onMessage((event) => {
       switch (event.event) {
-        case 'room:ticker': {
-          const data = event.data as { game_id: string; time_remaining_s: number; players_registered: number; prize_pool_derash: number };
+        case "room:ticker": {
+          const data = event.data as {
+            game_id: string;
+            time_remaining_s: number;
+            players_joined: number;
+            players_ready: number;
+            min_required: number;
+            prize_pool_derash: number;
+          };
           setState((prev) => ({
             ...prev,
             gameId: data.game_id,
             timeRemaining: data.time_remaining_s,
-            playersRegistered: data.players_registered,
+            playersJoined: data.players_joined,
+            playersReady: data.players_ready,
+            minRequired: data.min_required,
             prizePool: data.prize_pool_derash,
+            waitingForPlayers: data.players_ready < data.min_required,
           }));
           break;
         }
-        case 'card:confirmed': {
-          const data = event.data as { cartela_number: number; matrix: number[][] };
+
+        case "room:selected_cards": {
+          const data = event.data as SelectedCardInfo[];
+          setState((prev) => ({ ...prev, selectedCards: data }));
+          break;
+        }
+
+        case "card:selected": {
+          const data = event.data as SelectedCardInfo;
           setState((prev) => ({
             ...prev,
-            currentCartela: { id: Date.now(), cartela_number: data.cartela_number, matrix_data: data.matrix },
-            gameView: 'arena',
+            selectedCards: [...prev.selectedCards, data],
+            playersReady: prev.playersReady + 1,
           }));
           break;
         }
-        case 'match:ball_drop': {
+
+        case "card:confirmed": {
+          const data = event.data as {
+            cartela_number: number;
+            matrix: number[][];
+          };
+          setState((prev) => ({
+            ...prev,
+            currentCartela: {
+              id: Date.now(),
+              cartela_number: data.cartela_number,
+              matrix_data: data.matrix,
+            },
+            gameView: "arena",
+          }));
+          break;
+        }
+
+        case "room:timer_restart": {
+          const data = event.data as {
+            reason: string;
+            players_ready: number;
+            min_required: number;
+          };
+          setState((prev) => ({
+            ...prev,
+            timeRemaining: 30,
+            waitingForPlayers: true,
+            playersReady: data.players_ready,
+            minRequired: data.min_required,
+          }));
+          break;
+        }
+
+        case "game:started": {
+          const data = event.data as {
+            game_id: string;
+            players: number;
+            prize_pool: number;
+          };
+          setState((prev) => ({
+            ...prev,
+            gameView: "arena",
+            prizePool: data.prize_pool,
+            playersReady: data.players,
+            waitingForPlayers: false,
+          }));
+          break;
+        }
+
+        case "game:start_failed": {
+          const data = event.data as { error: string };
+          console.error("Game start failed:", data.error);
+          break;
+        }
+
+        case "match:ball_drop": {
           const data = event.data as BallDropData;
           setState((prev) => ({
             ...prev,
@@ -120,31 +218,36 @@ export function GameProvider({ children }: { children: ReactNode }) {
           }));
           break;
         }
-        case 'match:resolved': {
+
+        case "match:resolved": {
           const data = event.data as MatchResolvedData;
           setState((prev) => ({
             ...prev,
             winner: data,
             showWinOverlay: true,
           }));
-          // Auto-dismiss after 2s
           setTimeout(() => {
             setState((prev) => ({
               ...prev,
               showWinOverlay: false,
-              gameView: 'lobby',
+              gameView: "lobby",
               winner: null,
               selectedCartela: null,
               currentCartela: null,
               calledBalls: [],
               latestBall: null,
               totalCalled: 0,
+              selectedCards: [],
+              playersJoined: 0,
+              playersReady: 0,
+              waitingForPlayers: false,
             }));
-          }, 2000);
+          }, 5000);
           break;
         }
-        case 'error': {
-          console.error('WebSocket error:', event.data);
+
+        case "error": {
+          console.error("WebSocket error:", event.data);
           break;
         }
       }
@@ -162,13 +265,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (cleanupRef.current) cleanupRef.current();
     setState((prev) => ({
       ...prev,
-      gameView: 'lobby',
+      gameView: "lobby",
       selectedCartela: null,
       currentCartela: null,
       calledBalls: [],
       latestBall: null,
       totalCalled: 0,
       isSpectator: false,
+      selectedCards: [],
+      playersJoined: 0,
+      playersReady: 0,
+      waitingForPlayers: false,
     }));
   }, []);
 
@@ -186,7 +293,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     toggleAutoDab,
     leaveGame,
     dismissWinOverlay,
-    isInLobby: state.gameView === 'lobby',
+    isInLobby: state.gameView === "lobby",
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
@@ -194,6 +301,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
 export function useGame() {
   const context = useContext(GameContext);
-  if (!context) throw new Error('useGame must be used within GameProvider');
+  if (!context) throw new Error("useGame must be used within GameProvider");
   return context;
 }

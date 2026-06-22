@@ -29,7 +29,7 @@ function AppContent() {
     console.log("initData exists:", !!initData);
     console.log("auth_token exists:", !!localStorage.getItem("auth_token"));
 
-    if (initData && !localStorage.getItem("token")) {
+    if (initData && !localStorage.getItem("auth_token")) {
       console.log("Calling verifyInitData...");
       api
         .verifyInitData(initData)
