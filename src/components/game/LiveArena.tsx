@@ -25,7 +25,7 @@ const NUMBER_RANGES = [
 export default function LiveArena() {
   const {
     gameId,
-    playersRegistered,
+
     selectedTier,
     prizePool,
     totalCalled,
