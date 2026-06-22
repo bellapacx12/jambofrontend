@@ -25,10 +25,11 @@ function AppContent() {
     tg.setBackgroundColor("#0B0A1A");
 
     const initData = tg.initData;
+
     console.log("initData exists:", !!initData);
     console.log("auth_token exists:", !!localStorage.getItem("auth_token"));
 
-    if (initData && !localStorage.getItem("auth_token")) {
+    if (initData && !localStorage.getItem("token")) {
       console.log("Calling verifyInitData...");
       api
         .verifyInitData(initData)
