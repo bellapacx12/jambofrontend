@@ -1,6 +1,6 @@
-import { Users, Trophy, Play } from 'lucide-react';
-import { cn } from '@/utils/cn';
-import { useGame } from '@/context/GameContext';
+import { Users, Trophy, Play } from "lucide-react";
+import { cn } from "@/utils/cn";
+import { useGame } from "@/context/GameContext";
 
 export default function LobbyView() {
   const { selectTier } = useGame();
@@ -10,7 +10,7 @@ export default function LobbyView() {
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-white mb-1">
-          Welcome to <span className="text-gold-gradient">Beteseb Bingo</span>
+          Welcome to <span className="text-gold-gradient">Jambo Bingo</span>
         </h1>
         <p className="text-gray-400 text-sm">Real-time multiplayer bingo</p>
       </div>
@@ -35,14 +35,16 @@ export default function LobbyView() {
 
       {/* Stake Selection */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-white mb-4 text-center">Choose Your Stake</h2>
+        <h2 className="text-lg font-semibold text-white mb-4 text-center">
+          Choose Your Stake
+        </h2>
         <div className="space-y-3">
           <button
             onClick={() => selectTier(10)}
             className={cn(
-              'w-full py-4 rounded-xl font-bold text-lg text-white',
-              'btn-emerald-gradient shadow-lg shadow-emerald-900/30',
-              'active:scale-[0.98] transition-transform flex items-center justify-center gap-3'
+              "w-full py-4 rounded-xl font-bold text-lg text-white",
+              "btn-emerald-gradient shadow-lg shadow-emerald-900/30",
+              "active:scale-[0.98] transition-transform flex items-center justify-center gap-3",
             )}
           >
             <Play size={20} fill="white" />
@@ -51,9 +53,9 @@ export default function LobbyView() {
           <button
             onClick={() => selectTier(20)}
             className={cn(
-              'w-full py-4 rounded-xl font-bold text-lg text-white',
-              'btn-neon-gradient shadow-lg shadow-blue-900/30',
-              'active:scale-[0.98] transition-transform flex items-center justify-center gap-3'
+              "w-full py-4 rounded-xl font-bold text-lg text-white",
+              "btn-neon-gradient shadow-lg shadow-blue-900/30",
+              "active:scale-[0.98] transition-transform flex items-center justify-center gap-3",
             )}
           >
             <Play size={20} fill="white" />
