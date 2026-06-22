@@ -53,7 +53,18 @@ export default function CartelaPicker() {
     setPreviewMatrix(matrix);
   };
 
-  const isSelected = (num: number) => selectedCartela === num;
+  // Check card status across all players
+  const getCardStatus = (num: number): "mine" | "other" | "available" => {
+    if (selectedCartela === num) return "mine";
+    const otherSelected = selectedCards.find((c) => c.cartela_number === num);
+    if (otherSelected) return "other";
+    return "available";
+  };
+
+  const getCardOwner = (num: number): string | null => {
+    const card = selectedCards.find((c) => c.cartela_number === num);
+    return card?.username || `Player ${card?.user_id}` || null;
+  };
 
   return (
     <div className="flex flex-col h-full px-3 pt-4 pb-20 overflow-y-auto">
@@ -125,24 +136,50 @@ export default function CartelaPicker() {
       {/* Selection Grid */}
       <div className="mb-4">
         <div className="grid grid-cols-8 gap-1.5">
-          {Array.from({ length: 96 }, (_, i) => i + 1).map((num) => (
-            <button
-              key={num}
-              onClick={() => handleSelect(num)}
-              disabled={selectedCartela !== null}
-              className={cn(
-                "aspect-square rounded-lg text-xs font-bold flex items-center justify-center",
-                "transition-all active:scale-95",
-                selectedCartela !== null && !isSelected(num)
-                  ? "bg-gray-800/30 text-gray-600 cursor-not-allowed"
-                  : isSelected(num)
-                    ? "bg-bingo-emerald text-white shadow-lg shadow-emerald-900/50"
-                    : "bg-gray-700/60 text-gray-300 hover:bg-gray-600/60",
-              )}
-            >
-              {num}
-            </button>
-          ))}
+          {Array.from({ length: 96 }, (_, i) => i + 1).map((num) => {
+            const status = getCardStatus(num);
+            const owner = status === "other" ? getCardOwner(num) : null;
+
+            return (
+              <button
+                key={num}
+                onClick={() => status === "available" && handleSelect(num)}
+                disabled={status !== "available"}
+                title={owner || undefined}
+                className={cn(
+                  "aspect-square rounded-lg text-xs font-bold flex items-center justify-center",
+                  "transition-all relative",
+                  status === "mine"
+                    ? "bg-bingo-emerald text-white shadow-lg shadow-emerald-900/50 scale-105 z-10"
+                    : status === "other"
+                      ? "bg-purple-600 text-white shadow-md cursor-not-allowed"
+                      : "bg-gray-700/60 text-gray-300 hover:bg-gray-600/60 active:scale-95",
+                )}
+              >
+                {num}
+                {/* Mini indicator for other players */}
+                {status === "other" && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-400 rounded-full border border-purple-800" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 mb-3 text-xs">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-bingo-emerald" />
+          <span className="text-gray-400">Your card</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-purple-600" />
+          <span className="text-gray-400">Taken</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-gray-700" />
+          <span className="text-gray-400">Available</span>
         </div>
       </div>
 
