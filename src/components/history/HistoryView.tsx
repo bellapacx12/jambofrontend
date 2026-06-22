@@ -23,7 +23,7 @@ export default function HistoryView() {
     api
       .getGameHistory(userId)
       .then((res) => {
-        setHistory(res.history || []);
+        setHistory((res.history as GameHistoryItem[]) || []);
         setLoading(false);
       })
       .catch((err) => {
