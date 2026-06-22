@@ -139,17 +139,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
         case "room:selected_cards": {
           const data = event.data as SelectedCardInfo[];
+          console.log("DEBUG room:selected_cards received:", data); // ← ADD THIS
           setState((prev) => ({ ...prev, selectedCards: data }));
           break;
         }
 
         case "card:selected": {
           const data = event.data as SelectedCardInfo;
-          setState((prev) => ({
-            ...prev,
-            selectedCards: [...prev.selectedCards, data],
-            playersReady: prev.playersReady + 1,
-          }));
+          console.log("DEBUG card:selected received:", data); // ← ADD THIS
+          setState((prev) => {
+            const exists = prev.selectedCards.find(
+              (c) => c.user_id === data.user_id,
+            );
+            if (exists) return prev;
+            return {
+              ...prev,
+              selectedCards: [...prev.selectedCards, data],
+              playersReady: prev.playersReady + 1,
+            };
+          });
           break;
         }
 
